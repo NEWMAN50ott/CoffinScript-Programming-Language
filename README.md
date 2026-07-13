@@ -4,7 +4,7 @@ This is a open source bare metal programming language
 
 An independent, functional systems language designed for bare-metal execution utilizing a single `r0` scratch accumulator. 
 
-CoffinScript bridges the gap between raw C-like pointer control and functional call-site safety. It is architected to work in tandem with a fast imperative bootstrap loader (such as **A-Lang**) to drive bulletproof hardware subsystems.
+CoffinScript bridges the gap between raw C-like pointer control and functional call-site safety. It is architected to work in tandem with a fast imperative bootstrap loader to drive bulletproof hardware subsystems.
 
 ---
 
