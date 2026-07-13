@@ -1,0 +1,140 @@
+// ============================================================================
+//   CoffinScript Self-Hosting Compiler Toolchain (csc)
+//   Target Architecture: register-less with r0 accumulator
+//   Output Formats: Native raw machine code binary image (.bin)
+// ============================================================================
+
+struct.Token: {
+    type: u32
+    val_addr: u32
+    line_num: u32
+}
+end
+
+struct.CompilerState: {
+    bin_out_ptr: u32
+    src_read_ptr: u32
+    scope_top: u32
+}
+end
+
+fn.main(): {
+    let.state: var.CompilerState
+    state.bin_out_ptr: 0
+    state.src_read_ptr: 0x0100 // Hex address holding source code file buffer
+    state.scope_top: 0
+
+    let.active_char: var.u32
+    active_char: 0
+
+    smp.print(“csc Toolchain Initialized Successfully.”)
+    smp.print(“Parsing file stream... Target: output image payload (.bin)”)
+
+    // Dynamic Lexer Engine Pass Loop (Visual Eternity Layout)
+    loop: {
+        active_char: smp.read_byte(state.src_read_ptr)
+
+        // Exit block boundary condition: Null Terminator / End of File reached
+        if: active_char == 0 {
+            end // Custom rule: 'end' inside loops breaks execution bounds!
+        }
+
+        // Strip structural white-spaces and ignore formatting loops
+        if: active_char == 0x20 { // Match Space (ASCII 32)
+            state.src_read_ptr: state.src_read_ptr + 1
+            continue
+        }
+        if: active_char == 0x0A { // Match Newline (ASCII 10)
+            state.src_read_ptr: state.src_read_ptr + 1
+            continue
+        }
+
+        // Tokenizing Punctuation Operators & Custom Decorators
+        if: active_char == 0x40 { // Match '@' Custom Attributes Marker
+            lex_compiler_attribute(&mut.state)
+            continue // Internal routine handled pointer progression rules
+        }
+
+        if: active_char == 0x2E { // Match '.' Dot-Notation Modifiers
+            lex_dot_modifier(&mut.state)
+            continue // Internal routine handled pointer progression rules
+        }
+
+        if: active_char == 0x7B { // Match '{' Scoped Open Block
+            push_scope_stack(&mut.state, 0xAA) // Log 'fn' or 'loop' stack layer
+        }
+
+        if: active_char == 0x7D { // Match '}' Scoped Close Block
+            pop_scope_stack(&mut.state)
+        }
+
+        // Unified baseline advancement through source buffer
+        state.src_read_ptr: state.src_read_ptr + 1
+    }
+
+    // Binary Serialization Phase: Write target memory cache straight out to .bin file
+    smp.write_image_to_bin(0x9000, state.bin_out_ptr)
+    smp.print(“Compilation complete. Target executable binary flushed safely to disk.”)
+}
+end
+
+// --- Subroutine Subsystems & Call-Site Protected Logic Packages ---
+
+fn.lex_dot_modifier(compiler: &mut): {
+    let.next_char: var.u32
+    compiler.src_read_ptr: compiler.src_read_ptr + 1 // Move past '.'
+    next_char: smp.read_byte(compiler.src_read_ptr)
+
+    // Example translation: if dot block routes to alloc, emit core r0 machine bytes
+    if: next_char == 0x61 { // Match character literal 'a' for '.alloc' keyword
+        smp.write_bytecode(compiler.bin_out_ptr, 0xA9) // OPCODE_LDR0
+        smp.write_bytecode(compiler.bin_out_ptr, 0x80) // Sizing parameter
+        smp.write_bytecode(compiler.bin_out_ptr, 0x20) // OPCODE_CALL
+        smp.write_bytecode(compiler.bin_out_ptr, 0xFE) // Inbuilt malloc address vector
+    }
+    
+    // Advance pointer past the matched keyword before returning to loop head
+    compiler.src_read_ptr: compiler.src_read_ptr + 1
+}
+end
+
+fn.lex_compiler_attribute(compiler: &mut): {
+    let.attr_char: var.u32
+    compiler.src_read_ptr: compiler.src_read_ptr + 1 // Move past '@'
+    attr_char: smp.read_byte(compiler.src_read_ptr)
+
+    if: attr_char == 0x69 { // Match character literal 'i' for '@interrupt'
+        smp.write_byte(0x0300, 0x11) // Set memory-mapped macro token attribute configuration register
+        compiler.src_read_ptr: compiler.src_read_ptr + 9 // Fast forward past remaining string bytes
+    }
+}
+end
+
+fn.push_scope_stack(compiler: &mut, scope_id: var): {
+    let.stack_base_addr: var.u32
+    stack_base_addr: 0x0200 // Hardcoded LIFO stack array offset in RAM
+
+    let.target_offset: var.u32
+    target_offset: stack_base_addr + compiler.scope_top
+
+    smp.write_byte(target_offset, scope_id)
+    compiler.scope_top: compiler.scope_top + 1
+}
+end
+
+fn.pop_scope_stack(compiler: &mut): {
+    let.stack_base_addr: var.u32
+    stack_base_addr: 0x0200
+    compiler.scope_top: compiler.scope_top - 1
+
+    let.active_scope: var.u32
+    let.target_offset: var.u32
+    target_offset: stack_base_addr + compiler.scope_top
+    active_scope: smp.read_byte(target_offset)
+
+    if: active_scope == 0xBB { // Assume 0xBB logs active 'loop:' blocks
+        smp.write_bytecode(compiler.bin_out_ptr, 0x4C) // OPCODE_JMP
+        smp.write_bytecode(compiler.bin_out_ptr, 0x0A) // Loop head backward address jump
+    }
+}
+end
