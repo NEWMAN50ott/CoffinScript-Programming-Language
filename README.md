@@ -2,7 +2,7 @@
 This is a open source bare metal programming language
 # CoffinScript (`.cf`) 🪦⚡
 
-An independent, functional systems language designed for bare-metal execution on the register-less **`ourlang`** CPU microarchitecture utilizing a single `r0` scratch accumulator. 
+An independent, functional systems language designed for bare-metal execution utilizing a single `r0` scratch accumulator. 
 
 CoffinScript bridges the gap between raw C-like pointer control and functional call-site safety. It is architected to work in tandem with a fast imperative bootstrap loader (such as **A-Lang**) to drive bulletproof hardware subsystems.
 
@@ -53,7 +53,7 @@ end
 
 The **`csc` (CoffinScript Compiler)** is a self-hosting binary toolchain. It tokenizes `.cf` structures, runs reference sweeps, completely bypasses intermediate text streams, and emits flat, raw machine code binaries (`.bin`).
 
-### Instruction Encoding Format (`ourlang` ISA)
+### Instruction Encoding Format
 
 Every instruction maps directly to fixed 16-bit encoding slots processed by the `r0` scratch accumulator:
 *   `0x0000` (`nop`) - No operation.
